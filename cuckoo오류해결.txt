@@ -1,0 +1,9 @@
+virtualbox-RTR3InitEx실패,rc=-1912
+https://coder-solution.com/solution-blog/1039
+
+cuckoo세팅법
+https://forensic-wetware.tistory.com/4
+https://kkamagistory.tistory.com/578
+
+드래그앤드랍 해결
+https://dlgodks.tistory.com/24
