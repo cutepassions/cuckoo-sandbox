@@ -1,9 +1,13 @@
 # cuckoo-sandbox
 ## 프로젝트 개요
-- 기간 : 2022.04 (1개월)
-- 인원 : 1인
-- 목적 : 악성코드 분석을 위한 Cuckoo Sandbox 구축
-- 사용 언어 및 개발환경 : Oracle VM VirtualBox 6.1, Ubuntu 16.04, Windows 7
+### 기간
+- 2022.04 (1개월)
+### 인원
+- 1인
+### 목적
+- 악성코드 분석을 위한 Cuckoo Sandbox 구축
+### 사용 언어 및 개발환경
+- Oracle VM VirtualBox 6.1, Ubuntu 16.04, Windows 7
 
 ## 프로젝트 결과
 ### 구축 완료
