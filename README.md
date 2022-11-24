@@ -6,6 +6,9 @@
 - 사용 언어 및 개발환경 : Oracle VM VirtualBox 6.1, Ubuntu 16.04, Windows 7
 
 ## 프로젝트 결과
+### 구축 완료
+![image](https://user-images.githubusercontent.com/105566077/203837278-f8d2dc28-446f-456d-9443-f28e8252da79.png)
+
 ### 참고 자료  
 - virtualbox-RTR3InitEx실패,rc=-1912 (해당 오류 발생시)  
 https://coder-solution.com/solution-blog/1039  
