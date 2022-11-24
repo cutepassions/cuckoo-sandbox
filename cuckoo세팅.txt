@@ -1,0 +1,234 @@
+CUCKOO : 192.168.0.213 일경우
+ip : 192.168.109.128
+#CUCKOO샌드박스 구축
+0. IP확인
+ifconfig
+sudo apt-get -y install openssh-server
+
+1. 서비스 멈추기
+sudo systemctl stop apt-daily.service
+sudo systemctl stop apt-daily.timer
+sudo systemctl stop apt-daily.upgrade.service
+sudo systemctl stop apt-daily.upgrade.timer
+sudo systemctl disable apt-daily.service
+sudo systemctl disable apt-daily.timer
+sudo systemctl disable apt-daily.upgrade.service
+sudo systemctl disable apt-daily.upgrade.timer
+2. GUI환경에서 멈추기
+
+
+3.
+sudo apt update
+sudo apt install -y python-pip python-dev libssl-dev libjpeg-dev zlib1g-dev tcpdump apparmor-utils vim curl iptables-persistent
+4.tcpdump 보호기능 비활성화와 사용 권한 수정
+sudo aa-disable /usr/sbin/tcpdump
+sudo setcap cap_net_raw,cap_net_admin=eip /usr/sbin/tcpdump
+
+5. 버추얼박스 저장소 등록과 인증
+echo deb http://download.virtualbox.org/virtualbox/debian xenial contrib | sudo tee -a /etc/apt/sources.list.d/virtualbox.list
+wget -q https://www.virtualbox.org/download/oracle_vbox_2016.asc -O- | sudo apt-key add -
+sudo apt-get update
+sudo apt install -y virtualbox-5.1
+6. cuckoo 설치
+sudo -H pip install -U pip==20.3.3
+sudo -H pip install -U pip==20.3.4 (06.12)
+sudo -H pip install cuckoo==2.0.5.3
+sudo -H pip install cuckoo== (수정후)
+sudo -H pip install cuckoo (06.12)
+cuckoo
+┌
+    Welcome to Cuckoo Sandbox, this appears to be your first run!
+    We will now set you up with our default configuration.
+    You will be able to see and modify the Cuckoo configuration,
+    Yara rules, Cuckoo Signatures, and much more to your likings
+    by exploring the /home/master/.cuckoo directory.
+
+    Among other configurable items of most interest is the
+    new location for your Cuckoo configuration:
+              /home/master/.cuckoo/conf
+┘
+
+7.쿡쿠 디렉토리를 환경변수에 설정
+1. 환경변수 설정
+echo "export cwd=/home/\"\$USER\"/.cuckoo" >> ~/.profile
+source ~/.profile
+env | grep cwd
+
+8.Vmware안의 윈도우 설정
+1. 관리자 계정 활성화
+net user administrator /active:yes
+net user administrator *
+2.
+3.
+9.데이터베이스 구성
+1. postgresql 설치
+sudo apt-get install -y postgresql libpq-dev
+sudo passwd postgres
+p@ssw0rd!@123
+p@ssw0rd!@123
+sudo -u postgres createuser --interactive
+master
+n
+y
+y
+createdb cuckoo
+psql cuckoo
+alter user master with password 'p@ssw0rd!@123';
+\q
+sudo nano /etc/postgresql/9.5/main/postgresql.conf
+listen_address = '192.168.0.213'
+listen_address = '192.168.109.128' (수정후)
+sudo nano /etc/postgresql/9.5/main/pg_hba.conf
+host all all 192.168.0.0/24 md5
+host all all 192.168.109.0/24 md5 (수정후)
+sudo systemctl restart postgresql@9.5-main.service
+sudo systemctl enable postgresql@9.5-main.service
+
+10.웹 서비스 데이터베이스 구성
+sudo apt-get -y  install mongodb
+sudo nano /etc/mongodb.conf
+bind_ip = 192.168.0.213 
+bind_ip = 192.168.109.128 (수정후)
+
+sudo systemctl restart mongodb.service
+mongo 192.168.0.213
+mongo 192.168.109.128 (수정후)
+
+use cuckoo
+db.createUser({user:"master",pwd:"p@ssw0rd!@123",roles:[{role:"readWrite",db:"cuckoo"}]})
+exit
+#생략
+use Admin
+db.dropUser("master")
+
+
+11.쿡쿠 샌드박스 설정(가장 중요한 부분)
+1. cuckoo.conf
+sudo nano $cwd/conf/cuckoo.conf
+[database]
+connection=postgresql://master:p@ssw0rd!@123@192.168.0.213:5432/cuckoo
+connection=postgresql://master:p@ssw0rd!@123@192.168.109.128:5432/cuckoo (수정후)
+sudo -H pip install psycopg2==2.6.2
+2. virtualbox.conf
+sudo nano $cwd/conf/virtualbox.conf
+cuckoo1
+192.168.56.1 (원래는 101)
+3. reporting.conf
+sudo nano $cwd/conf/reporting.conf
+[mongodb]
+enabled = yes
+host = 192.168.0.213
+port = 27017
+db = cuckoo
+store_memdump = yes
+paginate = 100
+# MongoDB authentication (optional).
+username = master
+password = p@ssw0rd!@123
+12. 쿡쿠 샌드박스 실행
+cuckoo --help
+cuckoo -d
+┌
+  2020-04-06 00:55:46,692 [cuckoo] CRITICAL: CuckooCriticalError: Unable to bind ResultServer on 192.168.56.1:2042 
+  [Errno 99] Cannot assign requested address. 
+  This usually happens when you start Cuckoo without bringing up the virtual interface associated with the ResultServer IP address. 
+  Please refer to http://docs.cuckoosandbox.org/en/latest/faq/#troubles-problem for more information.
+┘
+cuckoo web -H 192.168.0.213
+cuckoo web -H 192.168.0.201
+cuckoo web -H 192.168.109.128 (수정후)
+#. 쿡쿠 샌드박스 기본 운영
+http://XXX.XXX.XXX.XXX:8000
+
+13. 윈도우 외부 접속을 위한 설정
+ifconfig
+sudo iptables -t nat -A POSTROUTING -o ens33 -s 192.168.56.0/24 -j MASQUERADE
+sudo iptables -P FORWARD DROP
+sudo iptables -A FORWARD -m state --state RELATED,ESTABLISHED -j ACCEPT
+sudo iptables -A FORWARD -s 192.168.56.0/24 -j ACCEPT
+sudo iptables -A FORWARD -s 192.168.56.0/24 -d 192.168.56.0/24 -j ACCEPT
+sudo iptables -A FORWARD -j LOG
+sudo iptables -L -v
+sudo nano /etc/sysctl.conf
+net.ipv4.ip_forward=1
+sudo sysctl -p /etc/sysctl.conf
+sudo netfilter-persistent save
+sudo cat /etc/iptables/rules.v4
+ping www.google.co.kr
+
+14. 스냅샵걸기(윈도우 스냅샵걸기)
+VBoxManage snapshot "cuckoo1" take "Snapshot 1" --pause
+VBoxManage controlvm "cuckoo1" poweroff
+VBoxManage snapshot "cuckoo1" restorecurrent
+
+
+15. 기타 프로그램 설치
+sudo apt-get -y install libfuzzy-dev
+sudo -H pip install pydeep
+sudo apt-get -y install swig
+sudo -H pip install m2crypto==0.24.0
+
+16. Nginx,uWSGI 서버구축
+sudo apt-get -y install uwsgi uwsgi-plugin-python nginx
+sudo adduser www-data $USER
+sudo rm /etc/nginx/sites-enabled/default
+sudo systemctl daemon-reload
+cd /etc/uwsgi/apps-available
+cuckoo web --uwsgi
+[uwsgi]
+
+cuckoo web --uwsgi | sudo tee -a /etc/uwsgi/apps-available/cuckoo-web.ini
+sudo ln -s /etc/uwsgi/apps-available/cuckoo-web.ini /etc/uwsgi/apps-enabled/
+sudo systemctl restart uwsgi.service
+cuckoo web --nginx -H 192.168.0.XXX
+cuckoo web --nginx -H 192.168.0.XXX | sudo tee -a /etc/nginx/sites-avaiable/cuckoo-web
+sudo ln -s /etc/nginx/sites-available/cuckoo-web /etc/nginx/sites-enabled
+sudo systemctl restart nginx.service
+
+17. Elasticsearch 설치
+sudo apt-get -y install openjdk-8-jre
+echo "deb https://artifacts.elastic.co/packages/5.x/apt stable main" | sudo tee -a /etc/apt/sources.list.d/elastic-5.x.list 
+wget -qO - https://artifacts.elastic.co/GPG-KEY-elasticsearch | sudo apt-key add -
+sudo apt-get update
+sudo apt-get -y install elasticsearch
+sudo nano /etc/elasticsearch/elasticsearch.yml
+cluster.name: ES-Cuckoo
+node.name: es-node-1
+path.data: /var/lib/elasticsearch
+path.logs: /var/log/elasticsearch
+network.host: 192.168.0.213
+http.port: 9200
+node.master: true
+node.data: true
+sudo systemctl enable elasticsearch.service
+sudo systemctl restart elasticsearch.service
+curl -X GET http://본인IP:9200
+sudo nano $cwd/conf/reporting.conf
+[elasticsearch]
+enabled=yes
+hosts=
+calls = yes
+cuckoo_node = es-node-1
+
+curl -X PUT 본인IP:9200/_template/cuckoo_template -T ~/.cuckoo/elasticsearch/template.json
+
+sudo systemctl restart uwsgi.service
+18. 볼라틸리티 설치
+sudo apt-get -y install volatility
+nano $cwd/conf/cuckoo.confi
+[cuckoo]
+memory_dump = yes
+16. nano $cwd/conf/processing.conf
+[virustotal]
+enabled = yes
+scan = no
+key =
+
+참고사항
+cuckoo process -r 1
+cuckoo clean
+cuckoo init
+
+
+
+
